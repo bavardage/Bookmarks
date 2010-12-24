@@ -10,15 +10,35 @@ from models import Bookmark, Link
 from decorators import *
 from jsonhandler import JSONHandler
 
-
+FORBIDDEN = 403
+NOT_FOUND = 404
 
 class BookmarkHandler(JSONHandler):
     _model = Bookmark
 
-    @require_login_or_redirect
+    def get_link(self, url):
+        l = Link.all().filter('url =', url).get()
+        if l is None:
+            l = Link(url=url)
+            l.put()
+        return l
+
+    def has_permission_for(self, r):
+        return (r.access == 'public' or r.user == users.get_current_user())
+
     def get(self):
         g = self.request.get
         q = Bookmark.all()
+        if g('key'):
+            b = Bookmark.get(g('key'))
+            if b:
+                if self.has_permission_for(b):
+                    self.json_output([b,])
+                    return
+                else:
+                    self.error(FORBIDDEN)
+            else:
+                self.error(NOT_FOUND)
         if g('tag'):
             q = q.filter('user_tags=', g('tag'))
         if g('tags'): #union comma sep
@@ -37,34 +57,38 @@ class BookmarkHandler(JSONHandler):
         if g('user'):
             q = q.filter('user=', user) #TODO: see if we must get user from db
         
-        def has_permission_for(r):
-            return (r.access == 'public' or r.user == users.get_current_user())
-
-        results = [r for r in q.fetch(10) if has_permission_for(r)]
-        json_output = self.JSONEncoder().encode(results)
-        self.response.out.write(json_output)
+        results = [r for r in q.fetch(10) if self.has_permission_for(r)]
+        self.json_output(results)
 
     @require_login_or_fail
     def post(self):
-        url = self.request.get('link')
-        l = Link.all().filter('url =', url).get()
-        if l is None:
-            l = Link(url=url)
-            l.put()
-
+        g = self.request.get
+        l = self.get_link(g('link'))
         b = Bookmark(
             user = users.get_current_user(),
-            title = self.request.get('title'),
+            title = g('title'),
             link = l,
-            user_tags = [db.Category(t) for t in self.request.get('tags').split()], #tags whitespace separated
-            access = self.request.get('access'))
+            user_tags = [db.Category(t) for t in g('user_tags').split()], 
+            #tags whitespace separated
+            access = g('access'))
         b.put()
         logging.info("new bookmark created - %s" % b)
 
-    put = post #RESTful omg buzzword
-    
+    @require_login_or_fail
+    def put(self):
+        g = self.request.get
+        b = self.Bookmark.get('key')
+        if b is None:
+            self.post()
+        else:
+            if b.user == users.get_current_user():
+                if g('title'): b.title = g('title')
+                if g('link'): b.link = self.get_link(g('link'))
+                if g('user_tags'): b.user_tags = [db.Category(t) for t in g('user_tags')]
+                if g('access'): b.access = g('access')
+            else:
+                self.error(FORBIDDEN)
             
-
 application = webapp.WSGIApplication(
     [('/api*', BookmarkHandler)],
     debug=True)
