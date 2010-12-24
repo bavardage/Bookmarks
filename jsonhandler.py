@@ -8,6 +8,10 @@ from django.utils import simplejson as json
 class JSONHandler(webapp.RequestHandler):
     _model = None
 
+    def json_output(self, obj):
+        self.response.headers['Content-Type'] = 'application/json'
+        self.response.out.write(self.JSONEncoder().encode(obj))
+
     class JSONEncoder(json.JSONEncoder):
         def default(self, obj):
             date_serialiser = lambda d : d.ctime()
@@ -19,6 +23,7 @@ class JSONHandler(webapp.RequestHandler):
                 return serialisers[obj.__class__](obj)
             elif isinstance(obj, db.Model):
                 output = {}
+                output['_key'] = str(obj.key())
                 for k,v in obj.properties().iteritems():
                     val = getattr(obj, k)
                     output[k] = val
