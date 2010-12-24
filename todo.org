@@ -1,0 +1,9 @@
+
+# Main ideas
+- notion of friends
+- sending a link to friends
+
+
+# Improvements
+- Title Searching - use 'hack', look up App Engine full text search
+
