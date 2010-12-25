@@ -9,6 +9,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from models import Bookmark, Link
 from decorators import *
 from jsonhandler import JSONHandler
+from users import get_friendship
 
 FORBIDDEN = 403
 NOT_FOUND = 404
@@ -23,8 +24,17 @@ class BookmarkHandler(JSONHandler):
             l.put()
         return l
 
-    def has_permission_for(self, r):
-        return (r.access == 'public' or r.user == users.get_current_user())
+    def can_view(self, r):
+        if r.access == 'public':
+            return True
+        elif r.user == users.get_current_user():
+            return True
+        else:
+            fs = get_friendship(r.user, users.get_current_user())
+            if fs and fs.type == 'friendship':
+                return True
+            else: 
+                return False
 
     def get(self):
         g = self.request.get
