@@ -13,6 +13,9 @@ handlers:
  - url: /api
    script: api.py
 
+ - url: /.*
+   script: ui.py
+
 builtins:
 - datastore_admin: on
 - appstats: on
