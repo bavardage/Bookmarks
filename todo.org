@@ -6,4 +6,4 @@
 
 # Improvements
 - Title Searching - use 'hack', look up App Engine full text search
-
+- Add favicon
