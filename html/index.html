@@ -4,10 +4,28 @@
     <title>Bookmarks</title>
     <link rel="stylesheet" href="/style/style.css" 
 	  type="text/css" media="screen, projection">
-    <script type="javascript" src="/script/script.js"></script>
+    <script type="text/javascript" src="/script/jquery.js"></script>
+    <script type="text/javascript" src="/script/script.js"></script>
+    <script type="text/javascript">
+      $(document).ready(setup);
+    </script>
   </head>
   <body>
-    <div id="bookmarks">
+    <div id="new">
+      <form action="/api/bookmarks" method="POST">
+	<label for="title">Title:</label><input type="text" name="title">
+	<label for="link">Link:</label><input type="link" name="link">
+	<label for="tags">Tags:</label><input type="tags" name="tags">
+	<label for="access">Access:</label>
+	<select name="access">
+	  <option value="private" selected>Private</option>
+	  <option value="friends">Friends</option>
+	  <option value="public">Public</option>
+	</select>
+	<input type="submit" value="Submit">
+      </form>
     </div>
+    <ul id="bookmarks">
+    </ul>
   </body>
 </html>
