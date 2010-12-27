@@ -36,6 +36,7 @@ class BookmarkHandler(JSONHandler):
             else: 
                 return False
 
+    @require_login_or_fail
     def get(self):
         g = self.request.get
         q = Bookmark.all()
@@ -50,12 +51,12 @@ class BookmarkHandler(JSONHandler):
             else:
                 self.error(NOT_FOUND)
         if g('tag'):
-            q = q.filter('user_tags=', g('tag'))
+            q = q.filter('tags=', g('tag'))
         if g('tags'): #union comma sep
-            q = q.filter('user_tags IN', g('tags').split(','))
+            q = q.filter('tags IN', g('tags').split(','))
         if g('all_tags'):
             for t in g('all_tags').split(','):
-                q = q.filter('user_tags=', t)
+                q = q.filter('tags=', t)
         if g('link'):
             l = Link.all().filter('url=', g('link')).get()
             if l:
@@ -66,10 +67,18 @@ class BookmarkHandler(JSONHandler):
             q = q.filter('access=', g('access'))
         if g('user'):
             q = q.filter('user=', user) #TODO: see if we must get user from db
-        
-        results = [r for r in q.fetch(10) if self.has_permission_for(r)]
+
+        q = q.order('-created')
+
+        try:
+            limit = int(g('limit'))
+        except:
+            limit = 10
+
+        results = [r for r in q.fetch(limit) if self.can_view(r)]
         self.json_output(results)
 
+    #TODO: SCRUB TITLE MAJORLY FOR <script etc
     @require_login_or_fail
     def post(self):
         g = self.request.get
@@ -78,7 +87,7 @@ class BookmarkHandler(JSONHandler):
             user = users.get_current_user(),
             title = g('title'),
             link = l,
-            user_tags = [db.Category(t) for t in g('user_tags').split()], 
+            tags = [db.Category(t) for t in g('tags').split()], 
             #tags whitespace separated
             access = g('access'))
         b.put()
@@ -87,20 +96,21 @@ class BookmarkHandler(JSONHandler):
     @require_login_or_fail
     def put(self):
         g = self.request.get
-        b = self.Bookmark.get('key')
+        b = Bookmark.get(g('key'))
         if b is None:
             self.post()
         else:
             if b.user == users.get_current_user():
                 if g('title'): b.title = g('title')
                 if g('link'): b.link = self.get_link(g('link'))
-                if g('user_tags'): b.user_tags = [db.Category(t) for t in g('user_tags')]
+                if g('tags'): b.tags = [db.Category(t) for t in g('tags').split()]
                 if g('access'): b.access = g('access')
+                b.put()
             else:
                 self.error(FORBIDDEN)
             
 application = webapp.WSGIApplication(
-    [('/api*', BookmarkHandler)],
+    [('/api/bookmarks.*', BookmarkHandler)],
     debug=True)
 
 def main():
