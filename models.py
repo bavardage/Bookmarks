@@ -13,7 +13,7 @@ class Bookmark(db.Model):
     user = db.UserProperty()
     title = db.StringProperty(required=True)
     link = db.ReferenceProperty(Link, required=True)
-    user_tags = db.ListProperty(db.Category)
+    tags = db.ListProperty(db.Category)
     created = db.DateTimeProperty(auto_now_add=True)
     access = db.StringProperty(required=True, choices=set(["public", "friends", "private"]))
 
@@ -24,8 +24,8 @@ class Friendship(db.Model):
     innefficient, BUT then again, that was with ReferenceProperty rather
     than UserProperty
     '''
-    from = db.UserProperty(required=True) #request FROM user TO user
+    fr = db.UserProperty(required=True) #request FROM user TO user
     to = db.UserProperty(required=True)
-    type = db.StringProperty(required=True, 
-                             choices=set(["friendship", "request", "block"]))
+    status = db.StringProperty(required=True, 
+                               choices=set(["friendship", "request", "block"]))
     created = db.DateTimeProperty(required=True, auto_now_add=True)
