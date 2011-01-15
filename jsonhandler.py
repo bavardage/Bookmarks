@@ -5,8 +5,22 @@ from google.appengine.ext import db
 from google.appengine.api import users
 from django.utils import simplejson as json
 
+JSON_ERRORS = {
+    'login': (403, '{"status": "not-logged-in"}'),
+    'forbidden': (403, '{"status": "forbidden"}'),
+    'not-found': (404, '{"status": "not-found"}')
+    }
+
+
 class JSONHandler(webapp.RequestHandler):
     _model = None
+
+    def do_error(self, what):
+        logging.error("DOING ERROR " + what)
+        if what in JSON_ERRORS:
+            code,json = JSON_ERRORS[what]
+            self.error(code)
+            self.response.out.write(json)
 
     def json_output(self, obj):
         self.response.headers['Content-Type'] = 'application/json'
@@ -36,8 +50,8 @@ class JSONHandler(webapp.RequestHandler):
         key = self.request.get('key')
         b = self._model.get(key)
         if not b:
-            self.error(404) #this thing didn't exist
+            self.do_error('not-found') #this thing didn't exist
         if b.user != users.get_current_user: #this means no login required perse
-            self.error(403) #tut tut
+            self.do_error('forbidden') #tut tut
         else:
             b.delete()

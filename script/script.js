@@ -12,7 +12,9 @@ function partialWithScope(fn, scope) {
 }
 
 function default_error_handler(req, status, error) {
-  alert("" + req + status + error);
+  alert('error handle: "' + req.responseText + '"');
+  var resp = JSON.parse(req.responseText);
+  //now do stuff based no resp
 }
 function default_success_handler(data) {
   alert('dsh');

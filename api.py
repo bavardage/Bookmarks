@@ -47,9 +47,9 @@ class BookmarkHandler(JSONHandler):
                     self.json_output([b,])
                     return
                 else:
-                    self.error(FORBIDDEN)
+                    self.do_error('forbidden')
             else:
-                self.error(NOT_FOUND)
+                self.do_error('not-found')
         if g('tag'):
             q = q.filter('tags=', g('tag'))
         if g('tags'): #union comma sep
@@ -107,7 +107,7 @@ class BookmarkHandler(JSONHandler):
                 if g('access'): b.access = g('access')
                 b.put()
             else:
-                self.error(FORBIDDEN)
+                self.do_error('forbidden')
             
 application = webapp.WSGIApplication(
     [('/api/bookmarks.*', BookmarkHandler)],
